@@ -20,7 +20,7 @@ class Download:
         self.chunk_size = chunk_size
         self.daily_url_template = "https://static.okx.com/cdn/okx/match/orderbook/L2/400lv/daily/{YYYYMMDD}/{SYMBOL}-L2orderbook-400lv-{YYYY_MM_DD}.tar.gz"
         
-        self.output_path = self.base_data_path / "orderBook" / symbol.lower()
+        self.output_path = self.base_data_path / "perpetual_orderBook" / symbol.lower()
         self.output_path.mkdir(parents=True, exist_ok=True)
         
         self.schema = pa.schema([
@@ -63,11 +63,24 @@ class Download:
         return available_files
     
     def download_date_range(self, dates_list):
-        """Download all dates in list"""
-        results = {"success": 0, "failed": 0}
+        """Download all dates in list with a safeguard to not overwrite large existing files"""
+        results = {"success": 0, "failed": 0, "skipped": 0}
+        SIZE_THRESHOLD = 200 * 1024 * 1024  # 200MB in bytes
         
         for date_obj in dates_list:
             output_file = self.output_path / f"{date_obj.strftime('%Y-%m-%d')}.parquet"
+            
+            # Double-check safeguard: if file exists and is already >= 200MB, skip re-download
+            if output_file.exists():
+                try:
+                    file_size = output_file.stat().st_size
+                    if file_size >= SIZE_THRESHOLD:
+                        print(f"Skip {output_file.name} (exists >= 200MB: {file_size/(1024*1024):.2f}MB)")
+                        results["skipped"] += 1
+                        continue
+                except Exception as e:
+                    # If stat fails, proceed to attempt download
+                    print(f"Warning: could not stat {output_file.name} ({e}), attempting download...")
             
             if self._download_and_convert_sync(self.get_url(date_obj), output_file):
                 print(f"{date_obj.strftime('%Y-%m-%d')}.parquet")

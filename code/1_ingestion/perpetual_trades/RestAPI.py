@@ -8,7 +8,7 @@ class RestAPI:
     
     def __init__(self, symbol="BTC-USDT-SWAP", base_start_date="2025-01-01", base_data_path="../../../datalake/1_bronze", buffer_size=2000):
         self.symbol = symbol
-        self.output_path = Path(base_data_path) / "trades" / symbol.lower()
+        self.output_path = Path(base_data_path) / "perpetual_trades" / symbol.lower()
         self.output_path.mkdir(parents=True, exist_ok=True)
         self.marketAPI = MarketData.Market()
         self.buffer_size = buffer_size

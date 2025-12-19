@@ -10,13 +10,13 @@ import requests
 import polars as pl
 
 class Download:
-    def __init__(self, symbol="BTC-USDT-SWAP", base_start_date="2025-01-01", base_data_path="../../../datalake/1_bronze"):
+    def __init__(self, symbol="BTC-USDT", base_start_date="2025-01-01", base_data_path="../../../datalake/1_bronze"):
         self.symbol = symbol
         self.base_start_date = base_start_date
         self.base_data_path = Path(base_data_path)
-        self.monthly_url_template = "https://static.okx.com/cdn/okex/traderecords/swaprates/monthly/{YYYYMM}/{SYMBOL}-fundingrates-{YYYY_MM}.zip"
+        self.daily_url_template = "https://static.okx.com/cdn/okex/traderecords/trades/daily/{YYYYMMDD}/{SYMBOL}-trades-{YYYY_MM_DD}.zip"
         
-        self.output_path = self.base_data_path / "fundingRate" / symbol.lower()
+        self.output_path = self.base_data_path / "spot_trades" / symbol.lower()
         self.output_path.mkdir(parents=True, exist_ok=True)
         
         self.interrupted = False
@@ -26,39 +26,33 @@ class Download:
         start_date = datetime.strptime(self.base_start_date, "%Y-%m-%d")
         current_date = datetime.now()
         
-        # Set to first day of start month
-        current_month = start_date.replace(day=1)
-        
-        while current_month <= current_date:
-            year_month = current_month.strftime("%Y-%m")
-            year_month_compact = current_month.strftime("%Y%m")
+        current_day = start_date
+        while current_day <= current_date:
+            year_month_day = current_day.strftime("%Y-%m-%d")
+            year_month_day_compact = current_day.strftime("%Y%m%d")
             
-            url = self.monthly_url_template.format(
-                YYYYMM=year_month_compact,
+            url = self.daily_url_template.format(
+                YYYYMMDD=year_month_day_compact,
                 SYMBOL=self.symbol,
-                YYYY_MM=year_month
+                YYYY_MM_DD=year_month_day
             )
             
             try:
                 if requests.head(url, timeout=10).status_code == 200:
                     available_files.append({
-                        "date": current_month,
+                        "date": current_day,
                         "url": url,
-                        "filename": f"{year_month}.parquet"
+                        "filename": f"{year_month_day}.parquet"
                     })
             except:
                 pass
             
-            # Move to next month
-            if current_month.month == 12:
-                current_month = current_month.replace(year=current_month.year + 1, month=1)
-            else:
-                current_month = current_month.replace(month=current_month.month + 1)
+            current_day += timedelta(days=1)
         
         return available_files
     
     def _download_and_convert(self, url, output_file):
-        """Download and convert funding rate files (sync version)"""
+        """Download and convert trades files (sync version)"""
         with tempfile.TemporaryDirectory(dir=self.output_path) as temp_dir:
             temp_path = Path(temp_dir)
             
@@ -87,7 +81,7 @@ class Download:
                 return False
     
     def run(self):
-        """Main run method for funding rate monthly files"""
+        """Main run method for trades daily files"""
         available_files = self._get_files()
         
         files_to_download = [f for f in available_files 
@@ -96,14 +90,13 @@ class Download:
         if not files_to_download:
             return
             
-        print(f"Downloading {len(files_to_download)} monthly files...")
+        print(f"Downloading {len(files_to_download)} daily files...")
         
         # Sort by date
-        monthly_files = sorted(files_to_download, key=lambda x: x["date"], reverse=False)
+        daily_files = sorted(files_to_download, key=lambda x: x["date"], reverse=False)
         
-        for file_info in monthly_files:
+        for file_info in daily_files:
             if self.interrupted:
-                print("\n⚠️ Download interrupted by user")
                 break
                 
             output_file = self.output_path / file_info["filename"]
@@ -118,7 +111,7 @@ class Download:
             gc.collect()
 
 if __name__ == "__main__":
-    downloader = Download()
+    downloader = Download(base_start_date="2025-01-01")
     
     def signal_handler(sig, frame):
         downloader.interrupted = True

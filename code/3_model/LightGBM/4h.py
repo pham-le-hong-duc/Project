@@ -29,8 +29,9 @@ class LightGBMTrainer:
         
         # Model Configuration (adjusted for smaller dataset)
         self.params = {
-            'objective': 'binary',
-            'metric': 'binary_logloss',
+            'objective': 'multiclass',
+            'num_class': 3,
+            'metric': 'multi_logloss',
             'boosting_type': 'gbdt',
             'n_estimators': 600,        # Reduced for smaller dataset
             'learning_rate': 0.08,      # Higher learning rate
@@ -53,8 +54,7 @@ class LightGBMTrainer:
         # Trading simulation parameters
         self.trading_fee = 0.0004  # 0.04% per trade
         
-        # Prediction threshold for precision optimization
-        self.prediction_threshold = 0.55  # Relaxed confidence for 4h
+        # Multiclass classification: predictions are 3-class probabilities
         
     def load_data(self):
         """Load and prepare data"""
@@ -81,7 +81,9 @@ class LightGBMTrainer:
         timestamps = df['timestamp_dt'].copy()
         
         print(f"✓ Features: {len(feature_cols)}, Target: {target_col}")
-        print(f"✓ Target distribution: {y.mean():.1%} positive")
+        vc = y.value_counts(normalize=True).sort_index()
+        dist_str = ", ".join([f"class {int(k)}: {v:.1%}" for k, v in vc.items()])
+        print(f"✓ Target distribution: {dist_str}")
         print(f"⚠️  Warning: Small dataset - results may have high variance")
         
         return X, y, timestamps
@@ -191,27 +193,30 @@ class LightGBMTrainer:
         """Evaluate model performance"""
         # Predictions
         y_pred_proba = model.predict(X_test)
-        y_pred = (y_pred_proba > self.prediction_threshold).astype(int)
+        y_pred = np.argmax(y_pred_proba, axis=1).astype(int)
         
         # Accuracy
         accuracy = (y_pred == y_test).mean()
         
-        # Precision, Recall (for additional metrics)
-        from sklearn.metrics import precision_score, recall_score
-        precision = precision_score(y_test, y_pred, zero_division=0)
-        recall = recall_score(y_test, y_pred, zero_division=0)
+        # Multiclass metrics
+        from sklearn.metrics import f1_score, classification_report
+        macro_f1 = f1_score(y_test, y_pred, average='macro', zero_division=0)
+        weighted_f1 = f1_score(y_test, y_pred, average='weighted', zero_division=0)
+        report = classification_report(y_test, y_pred, digits=3)
         
         return {
             'accuracy': accuracy,
-            'precision': precision,
-            'recall': recall,
+            'macro_f1': macro_f1,
+            'weighted_f1': weighted_f1,
+            'report': report,
             'y_pred': y_pred,
             'y_pred_proba': y_pred_proba
         }
     
     def simulate_trading(self, y_test, y_pred, returns_test):
         """Simulate trading performance"""
-        trade_signals = y_pred
+        # In 3-class setup, we consider class 2 (strong up) as BUY signal
+        trade_signals = (y_pred == 2).astype(int)
         actual_returns = returns_test if returns_test is not None else np.zeros(len(y_test))
         
         # Calculate PnL for each trade
@@ -310,10 +315,7 @@ class LightGBMTrainer:
             print("   📊 Evaluating...")
             metrics = self.evaluate_model(model, X_test_selected, y_test)
             
-            # Trading Simulation (simplified)
-            trading_metrics = self.simulate_trading(y_test, metrics['y_pred'], None)
-            
-            # Store results
+            # Store results (keep only evaluation metrics and minimal context)
             result = {
                 'fold_id': fold_id,
                 'train_start': train_start_time,
@@ -324,20 +326,15 @@ class LightGBMTrainer:
                 'test_samples': len(X_test),
                 'selected_features': len(selected_features),
                 'accuracy': metrics['accuracy'],
-                'precision': metrics['precision'],
-                'recall': metrics['recall'],
-                'total_pnl': trading_metrics['total_pnl'],
-                'avg_trade_return': trading_metrics['avg_trade_return'],
-                'total_trades': trading_metrics['total_trades'],
-                'top_feature': top_feature
+                'macro_f1': metrics['macro_f1'],
+                'weighted_f1': metrics['weighted_f1']
             }
             
             self.results.append(result)
             
             print(f"   ✓ Accuracy: {metrics['accuracy']:.3f}")
-            print(f"   ✓ Precision: {metrics['precision']:.3f}")
-            print(f"   ✓ Total Trades: {trading_metrics['total_trades']}")
-            print(f"   ✓ Top Feature: {top_feature}")
+            print(f"   ✓ Macro-F1: {metrics['macro_f1']:.3f}")
+            print(f"   ✓ Weighted-F1: {metrics['weighted_f1']:.3f}")
             print()
         
         # Summary
@@ -361,21 +358,11 @@ class LightGBMTrainer:
         print("⚠️  Note: Small dataset - statistical significance may be limited")
         
         accuracies = [r['accuracy'] for r in self.results]
-        pnls = [r['total_pnl'] for r in self.results]
-        trades = [r['total_trades'] for r in self.results]
         
         print(f"📈 Total Folds: {len(self.results)}")
         print(f"📈 Avg Accuracy: {np.mean(accuracies):.3f} ± {np.std(accuracies):.3f}")
         print(f"📈 Best Accuracy: {np.max(accuracies):.3f}")
         print(f"📈 Worst Accuracy: {np.min(accuracies):.3f}")
-        print(f"💰 Avg PnL per Fold: {np.mean(pnls):.4f}")
-        print(f"💰 Total PnL: {np.sum(pnls):.4f}")
-        print(f"📊 Avg Trades per Fold: {np.mean(trades):.0f}")
-        print(f"📊 Total Trades: {np.sum(trades)}")
-        
-        # Profitable folds
-        profitable_folds = sum(1 for pnl in pnls if pnl > 0)
-        print(f"💵 Profitable Folds: {profitable_folds}/{len(self.results)} ({profitable_folds/len(self.results):.1%})")
     
     def save_results(self):
         """Save results to CSV"""
@@ -401,13 +388,11 @@ class LightGBMTrainer:
             f.write("WARNING: Small dataset - statistical significance limited\\n\\n")
             
             accuracies = [r['accuracy'] for r in self.results]
-            pnls = [r['total_pnl'] for r in self.results]
             
-            f.write(f"Total Folds: {len(self.results)}\\n")
-            f.write(f"Avg Accuracy: {np.mean(accuracies):.3f} ± {np.std(accuracies):.3f}\\n")
-            f.write(f"Best Accuracy: {np.max(accuracies):.3f}\\n")
-            f.write(f"Worst Accuracy: {np.min(accuracies):.3f}\\n")
-            f.write(f"Total PnL: {np.sum(pnls):.4f}\\n")
+            f.write(f"Total Folds: {len(self.results)}\n")
+            f.write(f"Avg Accuracy: {np.mean(accuracies):.3f} ± {np.std(accuracies):.3f}\n")
+            f.write(f"Best Accuracy: {np.max(accuracies):.3f}\n")
+            f.write(f"Worst Accuracy: {np.min(accuracies):.3f}\n")
             
         print(f"📄 Summary saved to: {summary_file}")
     

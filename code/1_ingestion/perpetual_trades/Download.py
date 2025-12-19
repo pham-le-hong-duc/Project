@@ -16,7 +16,7 @@ class Download:
         self.base_data_path = Path(base_data_path)
         self.daily_url_template = "https://static.okx.com/cdn/okex/traderecords/trades/daily/{YYYYMMDD}/{SYMBOL}-trades-{YYYY_MM_DD}.zip"
         
-        self.output_path = self.base_data_path / "trades" / symbol.lower()
+        self.output_path = self.base_data_path / "perpetual_trades" / symbol.lower()
         self.output_path.mkdir(parents=True, exist_ok=True)
         
         self.interrupted = False

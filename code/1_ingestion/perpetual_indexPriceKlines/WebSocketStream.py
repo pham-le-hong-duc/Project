@@ -15,13 +15,9 @@ class WebSocketStream:
         self.url = "wss://wspap.okx.com:8443/ws/v5/business"
         
         # Map intervals to channel names
+        # Only 1m interval is supported
         self.interval_mapping = {
-            "1m": "index-candle1m",
-            "5m": "index-candle5m", 
-            "15m": "index-candle15m",
-            "1H": "index-candle1H",
-            "4H": "index-candle4H",
-            "1D": "index-candle1D"
+            "1m": "index-candle1m"
         }
         
         # Subscribe to all intervals
@@ -43,7 +39,7 @@ class WebSocketStream:
         
         # Create output paths for all intervals
         for interval in self.interval_mapping.keys():
-            output_path = self.base_data_path / "indexPriceKlines" / symbol.lower() / interval
+            output_path = self.base_data_path / "perpetual_indexPriceKlines" / symbol.lower()
             output_path.mkdir(parents=True, exist_ok=True)
     
     def _normalize(self, kline_data, interval):
@@ -123,7 +119,7 @@ class WebSocketStream:
             if final_klines:
                 df = pl.DataFrame(final_klines)
                 
-                output_path = self.base_data_path / "indexPriceKlines" / self.symbol.lower() / interval
+                output_path = self.base_data_path / "perpetual_indexPriceKlines" / self.symbol.lower()
                 output_file = output_path / f"{target_date}.parquet"
                 
                 if output_file.exists():
@@ -136,7 +132,7 @@ class WebSocketStream:
                 final_df = final_df.sort("open_time")
                 final_df.write_parquet(output_file)
                 
-                print(f"{len(final_klines)} → {interval}/{target_date}.parquet")
+                print(f"{len(final_klines)} → {target_date}.parquet")
                 
             self.buffers[interval].clear()
             

@@ -6,7 +6,7 @@ import okx.api.public as PublicData
 
 class RestAPI:
     
-    def __init__(self, symbol="BTC-USDT", base_data_path="../../../datalake/1_bronze", buffer_size=2000, base_start_date="2025-01-01"):
+    def __init__(self, symbol="BTC-USDT-SWAP", base_data_path="../../../datalake/1_bronze", buffer_size=2000, base_start_date="2025-01-01"):
         self.symbol = symbol
         self.base_data_path = Path(base_data_path)
         self.publicAPI = PublicData.Public(flag="0")
@@ -14,20 +14,16 @@ class RestAPI:
         self.base_start_date = base_start_date
         
         # Gap thresholds for each interval (in milliseconds) - 1.5x interval
+        # Only 1m interval is supported
         self.gap_thresholds = {
-            "1m": int(1.5 * 60 * 1000),           # 1.5 minutes
-            "5m": int(1.5 * 5 * 60 * 1000),       # 7.5 minutes  
-            "15m": int(1.5 * 15 * 60 * 1000),     # 22.5 minutes
-            "1H": int(1.5 * 60 * 60 * 1000),      # 1.5 hours
-            "4H": int(1.5 * 4 * 60 * 60 * 1000),  # 6 hours
-            "1D": int(1.5 * 24 * 60 * 60 * 1000)  # 36 hours
+            "1m": int(1.5 * 60 * 1000)  # 1.5 minutes
         }
     
     def detect_gaps(self, interval):
         # Get threshold for current interval
         gap_threshold = self.gap_thresholds.get(interval, 60000)
         
-        output_path = self.base_data_path / "indexPriceKlines" / self.symbol.lower() / interval
+        output_path = self.base_data_path / "perpetual_markPriceKlines" / self.symbol.lower()
         files = sorted(output_path.glob("*.parquet"))
         gaps = []
         
@@ -171,7 +167,7 @@ class RestAPI:
                     
                 loop = asyncio.get_event_loop()
                 result = await loop.run_in_executor(
-                    None, self.publicAPI.get_history_index_candles,
+                    None, self.publicAPI.get_history_mark_price_candles,
                     self.symbol, current_after, "", interval, "100"
                 )
                 
@@ -239,7 +235,7 @@ class RestAPI:
     
     def _save_to_daily_file(self, date_str, klines, interval):
         df = pl.DataFrame(klines).sort("open_time")
-        output_path = self.base_data_path / "indexPriceKlines" / self.symbol.lower() / interval
+        output_path = self.base_data_path / "perpetual_markPriceKlines" / self.symbol.lower()
         file_path = output_path / f"{date_str}.parquet"
         
         file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -271,7 +267,7 @@ class RestAPI:
             print(f"{'='*60}")
             
             # Ensure output directory exists
-            output_path = self.base_data_path / "indexPriceKlines" / self.symbol.lower() / interval
+            output_path = self.base_data_path / "perpetual_markPriceKlines" / self.symbol.lower()
             output_path.mkdir(parents=True, exist_ok=True)
             
             await self.run_single_interval(interval)

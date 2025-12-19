@@ -50,7 +50,16 @@ class DiamondDataCreator:
         df = pl.read_parquet(self.input_file)
         print(f"✓ Loaded {len(df):,} rows, {len(df.columns)} columns")
         
-        # Filter only completely non-null rows
+        # Drop forward return and volatility columns to prepare for training
+        drop_cols = [
+            col for col in df.columns
+            if col.startswith("ret_fwd_") or col.startswith("vol_")
+        ]
+        if drop_cols:
+            print(f"🧹 Dropping {len(drop_cols)} columns (ret_fwd_*, vol_*) before cleaning: {drop_cols[:10]}{' ...' if len(drop_cols) > 10 else ''}")
+            df = df.drop(drop_cols)
+        
+        # Filter only completely non-null rows (after dropping ret_fwd_* and vol_*)
         print("🧹 Filtering non-null rows...")
         null_count_expr = pl.sum_horizontal([pl.col(col).is_null().cast(pl.Int32) for col in df.columns])
         df_with_null_count = df.with_columns(null_count_expr.alias("null_count"))
@@ -162,16 +171,22 @@ class DiamondDataCreator:
         if target_label not in df_final.columns:
             print(f"⚠️  Warning: Target label {target_label} not found!")
         else:
-            label_stats = df_final.select([
-                pl.col(target_label).filter(pl.col(target_label).is_not_null()).mean().alias("positive_ratio"),
-                pl.col(target_label).filter(pl.col(target_label).is_not_null()).count().alias("total_count")
+            # 3-class label distribution (0/1/2) on non-null rows
+            stats = df_final.select([
+                pl.col(target_label).eq(0).sum().alias("c0"),
+                pl.col(target_label).eq(1).sum().alias("c1"),
+                pl.col(target_label).eq(2).sum().alias("c2"),
+                pl.col(target_label).is_null().sum().alias("nulls"),
+                pl.col(target_label).count().alias("total"),
             ]).to_dict(as_series=False)
-            
-            pos_ratio = label_stats["positive_ratio"][0]
-            total_count = label_stats["total_count"][0]
-            
-            if pos_ratio is not None:
-                print(f"🎯 Label distribution: {pos_ratio:.1%} positive ({int(total_count * pos_ratio):,}/{total_count:,})")
+
+            c0, c1, c2 = stats["c0"][0], stats["c1"][0], stats["c2"][0]
+            total = stats["total"][0]
+            nulls = stats["nulls"][0]
+            valid = max(total - nulls, 1)
+            print(
+                f"🎯 Label distribution: 0={c0:,} ({c0/valid:.1%}), 1={c1:,} ({c1/valid:.1%}), 2={c2:,} ({c2/valid:.1%}) | total={total:,}, nulls={nulls:,}"
+            )
         
         return df_final
     

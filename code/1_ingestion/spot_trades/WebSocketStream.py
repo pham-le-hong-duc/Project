@@ -8,15 +8,15 @@ import websockets
 import polars as pl
 
 class WebSocketStream:
-    def __init__(self, symbol="BTC-USDT-SWAP", base_data_path="../../../datalake/1_bronze",
-                 buffer_size=100):
+    def __init__(self, symbol="BTC-USDT", base_data_path="../../../datalake/1_bronze",
+                 buffer_size=100, buffer_timeout=60):
         self.symbol = symbol
         self.base_data_path = Path(base_data_path)
-        self.output_path = self.base_data_path / "fundingRate" / symbol.lower()
+        self.output_path = self.base_data_path / "spot_trades" / symbol.lower()
         self.output_path.mkdir(parents=True, exist_ok=True)
         
-        self.url = "wss://wspap.okx.com:8443/ws/v5/public"
-        self.channel = "funding-rate"
+        self.url = "wss://ws.okx.com:8443/ws/v5/public"
+        self.channel = "trades"
         
         args = [{"channel": self.channel, "instId": symbol}]
         self.subscribe_msg = json.dumps({"op": "subscribe", "args": args})
@@ -25,52 +25,49 @@ class WebSocketStream:
         
         self.buffer = []
         self.buffer_size = buffer_size
-        self.current_month = datetime.now().strftime("%Y-%m")
-        self.processed_funding_times = set()  # Track processed funding times
+        self.buffer_timeout = buffer_timeout
+        self.last_flush_time = datetime.now()
+        self.current_date = datetime.now().strftime("%Y-%m-%d")
     
-    def _normalize(self, funding_data):
+    def _normalize(self, trade):
         try:
-            if isinstance(funding_data, dict):
+            if isinstance(trade, dict):
                 return {
                     "instrument_name": self.symbol,
-                    "funding_rate": float(funding_data["fundingRate"]),
-                    "funding_time": int(funding_data["fundingTime"])
+                    "trade_id": int(trade["tradeId"]),  # Ép kiểu thành int để đồng nhất với RestAPI
+                    "side": trade["side"],
+                    "price": float(trade["px"]),
+                    "size": float(trade["sz"]),
+                    "created_time": int(trade["ts"])
                 }
             return None
         except:
             return None
     
-    def _check_month_change(self):
-        """Check if month has changed and flush buffer if needed"""
-        new_month = datetime.now().strftime("%Y-%m")
-        if new_month != self.current_month:
-            # Flush buffer with old month before updating
+    def _check_date_change(self):
+        """Check if date has changed and flush buffer if needed"""
+        new_date = datetime.now().strftime("%Y-%m-%d")
+        if new_date != self.current_date:
+            # Flush buffer with old date before updating
             if self.buffer:
-                self._flush_buffer_with_month(self.current_month)
-            self.current_month = new_month
-            # Reset processed funding times for new month
-            self.processed_funding_times.clear()
+                self._flush_buffer_with_date(self.current_date)
+            self.current_date = new_date
             return True
         return False
     
     def _handle_message(self, message_str):
         try:
-            # Check if month has changed before processing new messages
-            self._check_month_change()
+            # Check if date has changed before processing new messages
+            self._check_date_change()
             
             data = json.loads(message_str)
             
             if (data.get('arg', {}).get('channel') == self.channel and 'data' in data):
-                for funding_record in data['data']:
-                    normalized_funding = self._normalize(funding_record)
+                for trade in data['data']:
+                    normalized_trade = self._normalize(trade)
                     
-                    if normalized_funding:
-                        funding_time = normalized_funding['funding_time']
-                        
-                        # Check for duplicate funding_time globally
-                        if funding_time not in self.processed_funding_times:
-                            self.buffer.append(normalized_funding)
-                            self.processed_funding_times.add(funding_time)
+                    if normalized_trade:
+                        self.buffer.append(normalized_trade)
                         
                         if len(self.buffer) >= self.buffer_size:
                             self._flush_buffer()
@@ -78,41 +75,42 @@ class WebSocketStream:
         except:
             pass
     
-    def _flush_buffer_with_month(self, target_month):
-        """Flush buffer to a specific month file"""
+    def _flush_buffer_with_date(self, target_date):
+        """Flush buffer to a specific date file"""
         if not self.buffer:
             return
         
         try:
-            # Deduplicate funding records by funding_time (keep last occurrence)
-            funding_dict = {funding["funding_time"]: funding for funding in self.buffer}
-            final_funding = list(funding_dict.values())
+            # Deduplicate trades by trade_id (keep last occurrence)
+            trades_dict = {trade["trade_id"]: trade for trade in self.buffer}
+            final_trades = list(trades_dict.values())
             
-            if final_funding:
-                df = pl.DataFrame(final_funding)
+            if final_trades:
+                df = pl.DataFrame(final_trades)
                 
-                output_file = self.output_path / f"{target_month}.parquet"
+                output_file = self.output_path / f"{target_date}.parquet"
                 
                 if output_file.exists():
                     existing_df = pl.read_parquet(output_file)
                     combined_df = pl.concat([existing_df, df])
-                    final_df = combined_df.unique(subset=["funding_time"], keep="last")
+                    final_df = combined_df.unique(subset=["trade_id"], keep="last")
                 else:
                     final_df = df
                 
-                final_df = final_df.sort("funding_time")
+                final_df = final_df.sort("created_time")
                 final_df.write_parquet(output_file)
                 
-                print(f"{len(final_funding)} → {output_file.name}")
-            
+                print(f"{len(final_trades)} → {output_file.name}")
+                
             self.buffer.clear()
+            self.last_flush_time = datetime.now()
             
-        except Exception as e:
-            print(f"Error flushing buffer with month {target_month}: {e}")
+        except:
+            pass
     
     def _flush_buffer(self):
-        """Flush buffer to current month file"""
-        self._flush_buffer_with_month(self.current_month)
+        """Flush buffer to current date file"""
+        self._flush_buffer_with_date(self.current_date)
     
     def run(self):
         async def _stream():
@@ -134,8 +132,11 @@ class WebSocketStream:
                                 
                             self._handle_message(message)
                             
-                            # Check for month change
-                            self._check_month_change()
+                            # Check for date change and timeout flush
+                            self._check_date_change()
+                            time_since_flush = (datetime.now() - self.last_flush_time).total_seconds()
+                            if len(self.buffer) > 0 and time_since_flush >= self.buffer_timeout:
+                                self._flush_buffer()
                                 
                 except websockets.exceptions.ConnectionClosed:
                     if self.running:
@@ -186,6 +187,6 @@ class WebSocketStream:
         self.running = False
         if self.buffer:
             self._flush_buffer()
-
+    
 if __name__ == "__main__":
-    WebSocketStream(buffer_size=1).run()
+    WebSocketStream(buffer_size=128, buffer_timeout=8).run()

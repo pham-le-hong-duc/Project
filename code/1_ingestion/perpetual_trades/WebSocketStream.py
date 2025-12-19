@@ -12,11 +12,11 @@ class WebSocketStream:
                  buffer_size=100, buffer_timeout=60):
         self.symbol = symbol
         self.base_data_path = Path(base_data_path)
-        self.output_path = self.base_data_path / "orderBook" / symbol.lower()
+        self.output_path = self.base_data_path / "perpetual_trades" / symbol.lower()
         self.output_path.mkdir(parents=True, exist_ok=True)
         
-        self.url = "wss://wspap.okx.com:8443/ws/v5/public"
-        self.channel = "books"
+        self.url = "wss://ws.okx.com:8443/ws/v5/public"
+        self.channel = "trades"
         
         args = [{"channel": self.channel, "instId": symbol}]
         self.subscribe_msg = json.dumps({"op": "subscribe", "args": args})
@@ -29,19 +29,16 @@ class WebSocketStream:
         self.last_flush_time = datetime.now()
         self.current_date = datetime.now().strftime("%Y-%m-%d")
     
-    def _normalize(self, book_data):
+    def _normalize(self, trade):
         try:
-            if isinstance(book_data, dict):
-                # Convert L400 to L50
-                asks_l50 = book_data.get('asks', [])[:50]
-                bids_l50 = book_data.get('bids', [])[:50]
-                
+            if isinstance(trade, dict):
                 return {
-                    "instId": book_data.get('instId'),
-                    "action": book_data.get('action'),
-                    "ts": int(book_data.get('ts')),
-                    "asks": json.dumps(asks_l50),  # Store as JSON string
-                    "bids": json.dumps(bids_l50)   # Store as JSON string
+                    "instrument_name": self.symbol,
+                    "trade_id": int(trade["tradeId"]),  # Ép kiểu thành int để đồng nhất với RestAPI
+                    "side": trade["side"],
+                    "price": float(trade["px"]),
+                    "size": float(trade["sz"]),
+                    "created_time": int(trade["ts"])
                 }
             return None
         except:
@@ -66,11 +63,11 @@ class WebSocketStream:
             data = json.loads(message_str)
             
             if (data.get('arg', {}).get('channel') == self.channel and 'data' in data):
-                for book_update in data['data']:
-                    normalized_book = self._normalize(book_update)
+                for trade in data['data']:
+                    normalized_trade = self._normalize(trade)
                     
-                    if normalized_book:
-                        self.buffer.append(normalized_book)
+                    if normalized_trade:
+                        self.buffer.append(normalized_trade)
                         
                         if len(self.buffer) >= self.buffer_size:
                             self._flush_buffer()
@@ -84,26 +81,26 @@ class WebSocketStream:
             return
         
         try:
-            # Deduplicate books by timestamp (keep last occurrence)
-            books_dict = {book["ts"]: book for book in self.buffer}
-            final_books = list(books_dict.values())
+            # Deduplicate trades by trade_id (keep last occurrence)
+            trades_dict = {trade["trade_id"]: trade for trade in self.buffer}
+            final_trades = list(trades_dict.values())
             
-            if final_books:
-                df = pl.DataFrame(final_books)
+            if final_trades:
+                df = pl.DataFrame(final_trades)
                 
                 output_file = self.output_path / f"{target_date}.parquet"
                 
                 if output_file.exists():
                     existing_df = pl.read_parquet(output_file)
                     combined_df = pl.concat([existing_df, df])
-                    final_df = combined_df.unique(subset=["ts"], keep="last")
+                    final_df = combined_df.unique(subset=["trade_id"], keep="last")
                 else:
                     final_df = df
                 
-                final_df = final_df.sort("ts")
+                final_df = final_df.sort("created_time")
                 final_df.write_parquet(output_file)
                 
-                print(f"{len(final_books)} → {output_file.name}")
+                print(f"{len(final_trades)} → {output_file.name}")
                 
             self.buffer.clear()
             self.last_flush_time = datetime.now()
