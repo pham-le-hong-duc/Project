@@ -1,11 +1,10 @@
-pandas
-numpy
-requests
 python-dotenv
-boto3==1.28.0
-kafka-python==2.1.0
-websockets==11.0.3
-pyspark==3.5.1
+boto3
+websockets
 pyarrow
+pyspark
+confluent-kafka
 duckdb
-# config spark, install openjdk-17-jdk
+pandas
+apache-airflow-providers-apache-spark
+apache-airflow-providers-common-sql

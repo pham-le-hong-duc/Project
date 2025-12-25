@@ -1,9 +1,400 @@
-version: '3.8'
-
+networks:
+  trading-data:
+    driver: bridge
+#
+#x-airflow-common:
+#  &airflow-common
+#  build:
+#    context: .
+#    dockerfile: Dockerfile
+#  env_file:
+#    - airflow.env
+##  environment: &airflow-common-env
+##    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+##    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+##    # Cấu hình bảo mật & Webserver
+##    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+##    AIRFLOW__WEBSERVER__WEB_SERVER_HOST: 0.0.0.0
+##    AIRFLOW__WEBSERVER__WEB_SERVER_PORT: 8080
+##    AIRFLOW__WEBSERVER__BASE_URL: http://localhost:8888
+##    AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_WEBSERVER_SECRET_KEY}
+##    # Cấu hình DAGs & Log
+##    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+##    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+##    AIRFLOW__LOGGING__LOGGING_LEVEL: INFO
+##    AIRFLOW__SCHEDULER__STANDALONE_DAG_PROCESSOR: "true"
+##    # Cấu hình Java cho Spark (Bắt buộc cho Dockerfile của bạn)
+##    JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+#  # Quyền user (Lấy từ file .env)
+#  #user: "${AIRFLOW_UID:-50000}:0"
+#  volumes:
+#    - ./dags:/opt/airflow/dags
+#    - ./logs:/opt/airflow/logs
+#    - ./plugins:/opt/airflow/plugins
+#    - ./datawarehouse.duckdb:/opt/airflow/datawarehouse.duckdb
+#  networks:
+#    - trading-data
+#  depends_on:
+#    airflow-postgres:
+#      condition: service_healthy
+#  restart: unless-stopped
+#services:
+#  minio:
+#    image: minio/minio:latest
+#
+#    container_name: minio
+#
+#    command: server /data --console-address ":9001"
+#
+#    environment:
+#
+#      MINIO_ROOT_USER: minio
+#
+#      MINIO_ROOT_PASSWORD: minio123
+#
+#    ports:
+#
+#      - "9000:9000"
+#
+#      - "9001:9001"
+#
+#    volumes:
+#
+#      - minio_data:/data
+#
+#    networks:
+#
+#      - trading-data
+#
+#    restart: always
+#  redpanda:
+#    image: docker.redpanda.com/redpandadata/redpanda:latest
+#
+#    container_name: redpanda
+#
+#    command:
+#
+#      - redpanda
+#
+#      - start
+#
+#      - --smp 1
+#
+#      - --overprovisioned
+#
+#      - --memory 1G
+#
+#      - --reserve-memory 0M
+#
+#      - --node-id 0
+#
+#      - --check=false
+#
+#      - --kafka-addr PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+#
+#      - --advertise-kafka-addr PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
+#
+#      - --pandaproxy-addr 0.0.0.0:8082
+#
+#      - --advertise-pandaproxy-addr localhost:8082
+#
+#    ports:
+#
+#      - "9092:9092"
+#
+#      - "29092:29092"
+#
+#      - "8082:8082"
+#
+#    volumes:
+#
+#      - redpanda_data:/var/lib/redpanda/data
+#
+#    networks:
+#
+#      - trading-data
+#
+#    healthcheck:
+#
+#      test: ["CMD-SHELL", "rpk cluster info"]
+#
+#      interval: 10s
+#
+#      timeout: 5s
+#
+#      retries: 5
+#
+#    restart: always
+#  console:
+#    image: docker.redpanda.com/redpandadata/console:latest
+#
+#    container_name: console
+#
+#    ports:
+#
+#      - "8080:8080"
+#
+#    environment:
+#
+#      KAFKA_BROKERS: "redpanda:29092"
+#
+#      KAFKA_SCHEMAREGISTRY_ENABLED: "false"
+#
+#      CONNECT_ENABLED: "true"
+#
+#      CONNECT_CLUSTERS_NAME: "local-connect"
+#
+#      CONNECT_CLUSTERS_URL: "http://kafka-connect:8083"
+#
+#    depends_on:
+#
+#      - redpanda
+#
+#    networks:
+#
+#      - trading-data
+#
+#    restart: always
+#  connect:
+#    image: confluentinc/cp-kafka-connect:7.6.0
+#
+#    container_name: kafka-connect
+#
+#    depends_on:
+#
+#      - redpanda
+#
+#    ports:
+#
+#      - "8083:8083"
+#
+#    environment:
+#
+#      CONNECT_BOOTSTRAP_SERVERS: "redpanda:29092"
+#
+#      CONNECT_REST_PORT: 8083
+#
+#      CONNECT_GROUP_ID: "connect-cluster"
+#
+#      CONNECT_CONFIG_STORAGE_TOPIC: "connect-configs"
+#
+#      CONNECT_OFFSET_STORAGE_TOPIC: "connect-offsets"
+#
+#      CONNECT_STATUS_STORAGE_TOPIC: "connect-status"
+#
+#      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+#
+#      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+#
+#      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+#
+#      CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.storage.StringConverter"
+#
+#      CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+#
+#      CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+#      CONNECT_REST_ADVERTISED_HOST_NAME: "kafka-connect"
+#      CONNECT_PLUGIN_PATH: "/usr/share/java,/etc/kafka-connect/jars"
+#
+#    volumes:
+#
+#      - ./connect-plugins:/etc/kafka-connect/jars
+#
+#    networks:
+#
+#      - trading-data
+#
+#    restart: always
+##  x-airflow-common: &airflow-common
+##    image: apache/airflow:2.10.5-python3.10
+##    shm_size: 1gb
+##    mem_limit: 2g
+##    environment:
+##      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+##      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+##      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+##      AIRFLOW__WEBSERVER__RBAC: "true"
+##      AIRFLOW__CORE__FERNET_KEY: ""
+##      AIRFLOW__DATABASE__LOAD_DEFAULT_CONNECTIONS: "false"
+##    volumes:
+##      - ./dags:/opt/airflow/dags
+##      - ./plugins:/opt/airflow/plugins
+##    networks:
+##      - trading-data
+#
+#  airflow-postgres:
+#    image: postgres:15
+#    container_name: airflow-postgres
+#    environment:
+#      POSTGRES_USER: airflow
+#      POSTGRES_PASSWORD: airflow
+#      POSTGRES_DB: airflow
+#    volumes:
+#      - postgres_data:/var/lib/postgresql/data
+#    networks:
+#      - trading-data
+#    healthcheck:
+#      test: ["CMD-SHELL", "pg_isready -U airflow -d airflow"]
+#      interval: 5s
+#      timeout: 5s
+#      retries: 20
+#    restart: unless-stopped
+#
+#  # =========================
+#  # AIRFLOW COMMON (ĐÃ SỬA)
+#  # =========================
+##  x-airflow-common: &airflow-common
+##    image: apache/airflow:2.10.5-python3.10
+##    # Tăng Shared Memory lên 2GB để tránh Bus Error
+##    shm_size: 2gb
+##    # BỎ mem_limit: 2g (Đây là nguyên nhân chính gây crash)
+##    environment:
+##      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+##      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+##      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+##      AIRFLOW__WEBSERVER__RBAC: "true"
+##      AIRFLOW__DATABASE__LOAD_DEFAULT_CONNECTIONS: "false"
+##    volumes:
+##      - ./dags:/opt/airflow/dags
+##      - ./plugins:/opt/airflow/plugins
+##    networks:
+##      - trading-data
+##  x-airflow-common: &airflow-common
+##    build: .
+##    shm_size: 2gb
+##    environment:
+##      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+##      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+##      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+##      AIRFLOW__WEBSERVER__RBAC: "true"
+##      AIRFLOW__DATABASE__LOAD_DEFAULT_CONNECTIONS: "false"
+##      # Thêm biến này để Spark tìm thấy Java
+##      JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+##    volumes:
+##      - ./dags:/opt/airflow/dags
+##      - ./plugins:/opt/airflow/plugins
+##      # Map thêm file .env nếu bạn muốn code python đọc được file .env
+##      - ./.env:/opt/airflow/.env
+##      # Map DuckDB file
+##      #- ./datawarehouse.duckdb:/mnt/d/learn/DE/Semina_project/datawarehouse.duckdb
+##    networks:
+##      - trading-data
+#  # =========================
+#  # AIRFLOW INIT
+#  # =========================    #entrypoint: /bin/bash
+#  ##    environment:
+#  ##      <<: *airflow-common-env
+#  ##      _AIRFLOW_DB_MIGRATE: 'true'
+#  ##      _AIRFLOW_WWW_USER_CREATE: 'true'
+#  ##      _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-admin}
+#  ##      _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-admin}
+#  ##      _PIP_ADDITIONAL_REQUIREMENTS: ''
+#  ##      _AIRFLOW_WWW_USER_FIRSTNAME: ${_AIRFLOW_WWW_USER_FIRSTNAME:-Admin}
+#  ##      _AIRFLOW_WWW_USER_LASTNAME: ${_AIRFLOW_WWW_USER_LASTNAME:-User}
+#  ##      _AIRFLOW_WWW_USER_EMAIL: ${_AIRFLOW_WWW_USER_EMAIL:-admin@admin.com}
+#  ##    command:
+#  ##      - -c
+#  ##      - |
+#  ##        if [[ "${_AIRFLOW_DB_MIGRATE}" == "true" ]]; then
+#  ##            echo "Running DB migration..."
+#  ##            airflow db migrate
+#  ##        fi
+#  ##
+#  ##        # Kiểm tra biến _AIRFLOW_WWW_USER_CREATE để tạo user
+#  ##        if [[ "${_AIRFLOW_WWW_USER_CREATE}" == "true" ]]; then
+#  ##            echo "Creating Admin User..."
+#  ##            airflow users create \
+#  ##              --role Admin \
+#  ##              --username "${_AIRFLOW_WWW_USER_USERNAME}" \
+#  ##              --password "${_AIRFLOW_WWW_USER_PASSWORD}" \
+#  ##              --firstname "${_AIRFLOW_WWW_USER_FIRSTNAME}" \
+#  ##              --lastname "${_AIRFLOW_WWW_USER_LASTNAME}" \
+#  ##              --email "${_AIRFLOW_WWW_USER_EMAIL}" \
+#  ##              || echo "User already exists, skipping creation."
+#  ##        fi
+#  airflow-init:
+#    <<: *airflow-common
+#    container_name: airflow-init
+#    command: >
+#      bash -c "
+#      airflow db migrate &&
+#      airflow users create \
+#        --role Admin \
+#        --username admin \
+#        --password admin \
+#        --firstname ngoc \
+#        --lastname hoa \
+#        --email hoa@hoa.com "
+#    restart: "no"
+#
+#  airflow-webserver:
+#    <<: *airflow-common
+#    container_name: airflow-webserver
+#    command: webserver
+#    ports:
+#      - "8888:8080"
+#    healthcheck:
+#      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health || exit 1"]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 30
+#    restart: always
+#    depends_on:
+#      airflow-init:
+#        condition: service_completed_successfully
+#
+#  airflow-scheduler:
+#    <<: *airflow-common
+#    container_name: airflow-scheduler
+#    command: scheduler
+#    restart: always
+#    depends_on:
+#      airflow-init:
+#        condition: service_completed_successfully
+#
+#  airflow-triggerer:
+#    <<: *airflow-common
+#    container_name: airflow-triggerer
+#    command: triggerer
+#    depends_on:
+#      airflow-init:
+#        condition: service_completed_successfully
+#  airflow-dag-processor:
+#    <<: *airflow-common
+#    container_name: airflow-dag-processor
+#    command: dag-processor
+#    depends_on:
+#      airflow-init:
+#        condition: service_completed_successfully
+#
+#volumes:
+#  minio_data:
+#  redpanda_data:
+#  postgres_data:
+x-airflow-common: &airflow-common
+  build:
+    context: .
+    dockerfile: Dockerfile
+  # Load biến từ file .env (fix warning variable not set)
+  env_file:
+    - airflow.env
+  environment:
+    - PYTHONPATH=/opt/airflow
+  user: "${AIRFLOW_UID:-50000}:0"
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./logs:/opt/airflow/logs
+    - ./plugins:/opt/airflow/plugins
+    - ./ELT:/opt/airflow/ELT
+    - ./SQL_db:/opt/airflow/SQL_db
+    - ./datawarehouse.duckdb:/opt/airflow/datawarehouse.duckdb
+  networks:
+    - trading-data
+  depends_on:
+    postgres:
+      condition: service_healthy
+  restart: always
 services:
-  # -----------------------------
-  # MinIO (Object Storage)
-  # -----------------------------
   minio:
     image: minio/minio:latest
     container_name: minio
@@ -12,15 +403,13 @@ services:
       MINIO_ROOT_USER: minio
       MINIO_ROOT_PASSWORD: minio123
     ports:
-      - "9000:9000" # API Port
-      - "9001:9001" # Console Port
+      - "9000:9000"
+      - "9001:9001"
     volumes:
       - minio_data:/data
+    networks:
+      - trading-data
     restart: always
-
-  # -----------------------------
-  # Redpanda (Kafka Broker)
-  # -----------------------------
   redpanda:
     image: docker.redpanda.com/redpandadata/redpanda:latest
     container_name: redpanda
@@ -33,50 +422,40 @@ services:
       - --reserve-memory 0M
       - --node-id 0
       - --check=false
-      # CẤU HÌNH QUAN TRỌNG ĐỂ FIX LỖI KẾT NỐI:
-      # - Internal (bên trong Docker): Chạy port 29092
-      # - External (bên ngoài Host/Python): Chạy port 9092
       - --kafka-addr PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
       - --advertise-kafka-addr PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
       - --pandaproxy-addr 0.0.0.0:8082
       - --advertise-pandaproxy-addr localhost:8082
     ports:
-      # Map port 9092 của Host vào port 9092 (OUTSIDE) của container
-      # Python script kết nối vào localhost:9092 sẽ hoạt động!
-      - "9092:9092" 
+      - "9092:9092"
       - "29092:29092"
       - "8082:8082"
     volumes:
       - redpanda_data:/var/lib/redpanda/data
+    networks:
+      - trading-data
     healthcheck:
       test: ["CMD-SHELL", "rpk cluster info"]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: always
-
-  # -----------------------------
-  # Redpanda Console (UI để xem Data)
-  # -----------------------------
   console:
     image: docker.redpanda.com/redpandadata/console:latest
     container_name: console
     ports:
       - "8080:8080"
     environment:
-      # Cấu hình trực tiếp bằng biến môi trường (Không cần file config riêng)
-      KAFKA_BROKERS: "redpanda:29092" # Kết nối qua mạng nội bộ Docker
-      KAFKA_SCHEMAREGISTRY_ENABLED: "false" 
+      KAFKA_BROKERS: "redpanda:29092"
+      KAFKA_SCHEMAREGISTRY_ENABLED: "false"
       CONNECT_ENABLED: "true"
       CONNECT_CLUSTERS_NAME: "local-connect"
       CONNECT_CLUSTERS_URL: "http://kafka-connect:8083"
     depends_on:
       - redpanda
+    networks:
+      - trading-data
     restart: always
-
-  # -----------------------------
-  # Kafka Connect (Để đẩy data sang MinIO sau này)
-  # -----------------------------
   connect:
     image: confluentinc/cp-kafka-connect:7.6.0
     container_name: kafka-connect
@@ -85,7 +464,7 @@ services:
     ports:
       - "8083:8083"
     environment:
-      CONNECT_BOOTSTRAP_SERVERS: "redpanda:29092" # Lưu ý: Dùng port nội bộ 29092
+      CONNECT_BOOTSTRAP_SERVERS: "redpanda:29092"
       CONNECT_REST_PORT: 8083
       CONNECT_GROUP_ID: "connect-cluster"
       CONNECT_CONFIG_STORAGE_TOPIC: "connect-configs"
@@ -97,12 +476,93 @@ services:
       CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.storage.StringConverter"
       CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
       CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
-      # Đường dẫn plugin, nhớ tạo thư mục ./connect-plugins ở ngoài
+      CONNECT_REST_ADVERTISED_HOST_NAME: "kafka-connect"
       CONNECT_PLUGIN_PATH: "/usr/share/java,/etc/kafka-connect/jars"
     volumes:
       - ./connect-plugins:/etc/kafka-connect/jars
+    networks:
+      - trading-data
     restart: always
-
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+    networks:
+      - trading-data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow -d airflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+  airflow-init:
+    <<: *airflow-common
+    container_name: airflow-init
+    # QUAN TRỌNG: Bỏ 'entrypoint: /bin/bash'.
+    # Image Airflow gốc đã có entrypoint xử lý environment, ta chỉ cần đưa command vào.
+    command:
+      - bash
+      - -c
+      - |
+        # Dùng đường dẫn tuyệt đối để chắc chắn chạy được, hoặc lệnh airflow thường
+        echo "Running Migrations..."
+        airflow db migrate
+        
+        echo "Creating User..."
+        airflow users create \
+          --role Admin \
+          --username "$${_AIRFLOW_WWW_USER_USERNAME}" \
+          --password "$${_AIRFLOW_WWW_USER_PASSWORD}" \
+          --firstname "$${_AIRFLOW_WWW_USER_FIRSTNAME}" \
+          --lastname "$${_AIRFLOW_WWW_USER_LASTNAME}" \
+          --email "$${_AIRFLOW_WWW_USER_EMAIL}" || true
+        
+        airflow version
+    restart: "no"
+  airflow-webserver:
+    <<: *airflow-common
+    command: webserver
+    ports:
+      - "8888:8080"
+    healthcheck:
+      test: [ "CMD", "curl", "--fail", "http://localhost:8080/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    networks:
+      - trading-data
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+  # Theo yêu cầu: Triggerer (cho deferrable operators/sensors)
+  airflow-triggerer:
+    <<: *airflow-common
+    command: triggerer
+    networks:
+      - trading-data
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+  # Theo yêu cầu: DAG Processor (khuyến nghị để parse DAG tách riêng)
+  airflow-dag-processor:
+    <<: *airflow-common
+    command: dag-processor
+    networks:
+      - trading-data
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
 volumes:
+  postgres-db-volume:
   minio_data:
   redpanda_data:
