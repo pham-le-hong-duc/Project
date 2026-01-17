@@ -1,0 +1,320 @@
+services:
+  # ========================================
+  # SETUP: REDPANDA TOPICS
+  # ========================================
+  redpanda-setup:
+    build:
+
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file:
+      - ../.env
+    image: okx-ingestion:latest
+    container_name: redpanda-setup
+    command: >
+      bash -c "
+        python -m src.ingestion.common.redpanda.setup_topics --bootstrap-servers redpanda:9092
+      "
+    volumes:
+      - ../src:/app/src
+    working_dir: /app
+    restart: "no"
+
+  # ========================================
+  # DATA INGESTION: SPOT TRADES
+  # ========================================
+  spot-trades-producer:
+    build:
+
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file:
+      - ../.env
+    image: okx-ingestion:latest
+    container_name: spot-trades-producer
+    command: >
+      bash -c "
+        echo 'Starting Spot Trades Producer...' &&
+        python -u -m src.ingestion.spot_trades.WebSocketStream.Producer
+      "
+    volumes:
+      - ../src:/app/src
+    working_dir: /app
+    environment:
+      - REDPANDA_BOOTSTRAP_SERVERS=redpanda:9092
+    restart: unless-stopped
+
+  spot-trades-consumer:
+    build:
+
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file:
+      - ../.env
+    image: okx-ingestion:latest
+    container_name: spot-trades-consumer
+    command: >
+      bash -c "
+        echo 'Starting Spot Trades Consumer...' &&
+        python -u -m src.ingestion.spot_trades.WebSocketStream.Consumer
+      "
+    volumes:
+      - ../src:/app/src
+    working_dir: /app
+    environment:
+      - REDPANDA_BOOTSTRAP_SERVERS=redpanda:9092
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - MINIO_BUCKET=okx
+    restart: unless-stopped
+
+  # ========================================
+  # DATA INGESTION: PERPETUAL TRADES
+  # ========================================
+  perpetual-trades-producer:
+    build:
+
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file:
+      - ../.env
+    image: okx-ingestion:latest
+    container_name: perpetual-trades-producer
+    command: >
+      bash -c "
+        echo 'Starting Perpetual Trades Producer...' &&
+        python -u -m src.ingestion.perpetual_trades.WebSocketStream.Producer
+      "
+    volumes:
+      - ../src:/app/src
+    working_dir: /app
+    environment:
+      - REDPANDA_BOOTSTRAP_SERVERS=redpanda:9092
+    restart: unless-stopped
+
+  perpetual-trades-consumer:
+    build:
+
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file:
+      - ../.env
+    image: okx-ingestion:latest
+    container_name: perpetual-trades-consumer
+    command: >
+      bash -c "
+        echo 'Starting Perpetual Trades Consumer...' &&
+        python -u -m src.ingestion.perpetual_trades.WebSocketStream.Consumer
+      "
+    volumes:
+      - ../src:/app/src
+    working_dir: /app
+    environment:
+      - REDPANDA_BOOTSTRAP_SERVERS=redpanda:9092
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - MINIO_BUCKET=okx
+    restart: unless-stopped
+
+  # ========================================
+  # DATA INGESTION: PERPETUAL FUNDING RATE
+  # ========================================
+  perpetual-funding-rate-producer:
+    build:
+
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file:
+      - ../.env
+    image: okx-ingestion:latest
+    container_name: perpetual-funding-rate-producer
+    command: >
+      bash -c "
+        echo 'Starting Perpetual Funding Rate Producer...' &&
+        python -u -m src.ingestion.perpetual_fundingRate.WebSocketStream.Producer
+      "
+    volumes:
+      - ../src:/app/src
+    working_dir: /app
+    environment:
+      - REDPANDA_BOOTSTRAP_SERVERS=redpanda:9092
+    restart: unless-stopped
+
+  perpetual-funding-rate-consumer:
+    build:
+
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file:
+      - ../.env
+    image: okx-ingestion:latest
+    container_name: perpetual-funding-rate-consumer
+    command: >
+      bash -c "
+        echo 'Starting Perpetual Funding Rate Consumer...' &&
+        python -u -m src.ingestion.perpetual_fundingRate.WebSocketStream.Consumer
+      "
+    volumes:
+      - ../src:/app/src
+    working_dir: /app
+    environment:
+      - REDPANDA_BOOTSTRAP_SERVERS=redpanda:9092
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - MINIO_BUCKET=okx
+    restart: unless-stopped
+
+  # ========================================
+  # DATA INGESTION: PERPETUAL ORDER BOOK
+  # ========================================
+  perpetual-orderbook-producer:
+    build:
+
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file:
+      - ../.env
+    image: okx-ingestion:latest
+    container_name: perpetual-orderbook-producer
+    command: >
+      bash -c "
+        echo 'Starting Perpetual OrderBook Producer...' &&
+        python -u -m src.ingestion.perpetual_orderBook.WebSocketStream.Producer
+      "
+    volumes:
+      - ../src:/app/src
+    working_dir: /app
+    environment:
+      - REDPANDA_BOOTSTRAP_SERVERS=redpanda:9092
+    restart: unless-stopped
+
+  perpetual-orderbook-consumer:
+    build:
+
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file:
+      - ../.env
+    image: okx-ingestion:latest
+    container_name: perpetual-orderbook-consumer
+    command: >
+      bash -c "
+        echo 'Starting Perpetual OrderBook Consumer...' &&
+        python -u -m src.ingestion.perpetual_orderBook.WebSocketStream.Consumer
+      "
+    volumes:
+      - ../src:/app/src
+    working_dir: /app
+    environment:
+      - REDPANDA_BOOTSTRAP_SERVERS=redpanda:9092
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - MINIO_BUCKET=okx
+    restart: unless-stopped
+
+  # ========================================
+  # DATA INGESTION: INDEX PRICE KLINES
+  # ========================================
+  index-klines-producer:
+    build:
+
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file:
+      - ../.env
+    image: okx-ingestion:latest
+    container_name: index-klines-producer
+    command: >
+      bash -c "
+        echo 'Starting Index Price Klines Producer...' &&
+        python -u -m src.ingestion.indexPriceKlines.WebSocketStream.Producer
+      "
+    volumes:
+      - ../src:/app/src
+    working_dir: /app
+    environment:
+      - REDPANDA_BOOTSTRAP_SERVERS=redpanda:9092
+    restart: unless-stopped
+
+  index-klines-consumer:
+    build:
+
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file:
+      - ../.env
+    image: okx-ingestion:latest
+    container_name: index-klines-consumer
+    command: >
+      bash -c "
+        echo 'Starting Index Price Klines Consumer...' &&
+        python -u -m src.ingestion.indexPriceKlines.WebSocketStream.Consumer
+      "
+    volumes:
+      - ../src:/app/src
+    working_dir: /app
+    environment:
+      - REDPANDA_BOOTSTRAP_SERVERS=redpanda:9092
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - MINIO_BUCKET=okx
+    restart: unless-stopped
+
+  # ========================================
+  # DATA INGESTION: PERPETUAL MARK PRICE KLINES
+  # ========================================
+  perpetual-mark-klines-producer:
+    build:
+
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file:
+      - ../.env
+    image: okx-ingestion:latest
+    container_name: perpetual-mark-klines-producer
+    command: >
+      bash -c "
+        echo 'Starting Perpetual Mark Price Klines Producer...' &&
+        python -u -m src.ingestion.perpetual_markPriceKlines.WebSocketStream.Producer
+      "
+    volumes:
+      - ../src:/app/src
+    working_dir: /app
+    environment:
+      - REDPANDA_BOOTSTRAP_SERVERS=redpanda:9092
+    restart: unless-stopped
+
+  perpetual-mark-klines-consumer:
+    build:
+
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file:
+      - ../.env
+    image: okx-ingestion:latest
+    container_name: perpetual-mark-klines-consumer
+    command: >
+      bash -c "
+        echo 'Starting Perpetual Mark Price Klines Consumer...' &&
+        python -u -m src.ingestion.perpetual_markPriceKlines.WebSocketStream.Consumer
+      "
+    volumes:
+      - ../src:/app/src
+    working_dir: /app
+    environment:
+      - REDPANDA_BOOTSTRAP_SERVERS=redpanda:9092
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - MINIO_BUCKET=okx
+    restart: unless-stopped
+
+networks:
+  default:
+    name: project_default
+    external: true

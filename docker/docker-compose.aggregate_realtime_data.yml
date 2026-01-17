@@ -1,0 +1,210 @@
+services:
+  # ========================================
+  # REAL-TIME AGGREGATION: SPOT TRADES
+  # ========================================
+  spot-trades-aggregator:
+    build:
+
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file:
+      - ../.env
+    image: okx-ingestion:latest
+    container_name: spot-trades-aggregator
+    command: >
+      bash -c "
+        echo 'Starting Spot Trades Real-time Aggregator...' &&
+        python -u -m src.processing.silver.aggregate.realtime.spot_trades
+      "
+    volumes:
+      - ../src:/app/src
+    working_dir: /app
+    environment:
+      - PYTHONPATH=/app/src
+      - REDPANDA_BOOTSTRAP_SERVERS=redpanda:9092
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=admin
+      - MINIO_SECRET_KEY=password
+      - MINIO_BUCKET=okx
+      - TIMESCALE_HOST=${TIMESCALE_HOST}
+      - TIMESCALE_PORT=${TIMESCALE_PORT}
+      - TIMESCALE_DB=${TIMESCALE_DB}
+      - TIMESCALE_USER=${TIMESCALE_USER}
+      - TIMESCALE_PASSWORD=${TIMESCALE_PASSWORD}
+    restart: unless-stopped
+
+  # ========================================
+  # REAL-TIME AGGREGATION: PERPETUAL TRADES
+  # ========================================
+  perpetual-trades-aggregator:
+    build:
+
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file:
+      - ../.env
+    image: okx-ingestion:latest
+    container_name: perpetual-trades-aggregator
+    command: >
+      bash -c "
+        echo 'Starting Perpetual Trades Real-time Aggregator...' &&
+        python -u -m src.processing.silver.aggregate.realtime.perpetual_trades
+      "
+    volumes:
+      - ../src:/app/src
+    working_dir: /app
+    environment:
+      - PYTHONPATH=/app/src
+      - REDPANDA_BOOTSTRAP_SERVERS=redpanda:9092
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=admin
+      - MINIO_SECRET_KEY=password
+      - MINIO_BUCKET=okx
+      - TIMESCALE_HOST=${TIMESCALE_HOST}
+      - TIMESCALE_PORT=${TIMESCALE_PORT}
+      - TIMESCALE_DB=${TIMESCALE_DB}
+      - TIMESCALE_USER=${TIMESCALE_USER}
+      - TIMESCALE_PASSWORD=${TIMESCALE_PASSWORD}
+    restart: unless-stopped
+
+  # ========================================
+  # REAL-TIME AGGREGATION: PERPETUAL ORDERBOOK
+  # ========================================
+  perpetual-orderbook-aggregator:
+    build:
+
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file:
+      - ../.env
+    image: okx-ingestion:latest
+    container_name: perpetual-orderbook-aggregator
+    command: >
+      bash -c "
+        echo 'Starting Perpetual OrderBook Real-time Aggregator...' &&
+        python -u -m src.processing.silver.aggregate.realtime.perpetual_orderbook
+      "
+    volumes:
+      - ../src:/app/src
+    working_dir: /app
+    environment:
+      - PYTHONPATH=/app/src
+      - REDPANDA_BOOTSTRAP_SERVERS=redpanda:9092
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=admin
+      - MINIO_SECRET_KEY=password
+      - MINIO_BUCKET=okx
+      - TIMESCALE_HOST=${TIMESCALE_HOST}
+      - TIMESCALE_PORT=${TIMESCALE_PORT}
+      - TIMESCALE_DB=${TIMESCALE_DB}
+      - TIMESCALE_USER=${TIMESCALE_USER}
+      - TIMESCALE_PASSWORD=${TIMESCALE_PASSWORD}
+    restart: unless-stopped
+
+  # ========================================
+  # REAL-TIME AGGREGATION: INDEX KLINES
+  # ========================================
+  index-klines-aggregator:
+    build:
+
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file:
+      - ../.env
+    image: okx-ingestion:latest
+    container_name: index-klines-aggregator
+    command: >
+      bash -c "
+        echo 'Starting Index Price Klines Real-time Aggregator...' &&
+        python -u -m src.processing.silver.aggregate.realtime.index_klines
+      "
+    volumes:
+      - ../src:/app/src
+    working_dir: /app
+    environment:
+      - PYTHONPATH=/app/src
+      - REDPANDA_BOOTSTRAP_SERVERS=redpanda:9092
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=admin
+      - MINIO_SECRET_KEY=password
+      - MINIO_BUCKET=okx
+      - TIMESCALE_HOST=${TIMESCALE_HOST}
+      - TIMESCALE_PORT=${TIMESCALE_PORT}
+      - TIMESCALE_DB=${TIMESCALE_DB}
+      - TIMESCALE_USER=${TIMESCALE_USER}
+      - TIMESCALE_PASSWORD=${TIMESCALE_PASSWORD}
+    restart: unless-stopped
+
+  # ========================================
+  # REAL-TIME AGGREGATION: PERPETUAL MARK KLINES
+  # ========================================
+  perpetual-mark-klines-aggregator:
+    build:
+
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file:
+      - ../.env
+    image: okx-ingestion:latest
+    container_name: perpetual-mark-klines-aggregator
+    command: >
+      bash -c "
+        echo 'Starting Perpetual Mark Price Klines Real-time Aggregator...' &&
+        python -u -m src.processing.silver.aggregate.realtime.perpetual_mark_klines
+      "
+    volumes:
+      - ../src:/app/src
+    working_dir: /app
+    environment:
+      - PYTHONPATH=/app/src
+      - REDPANDA_BOOTSTRAP_SERVERS=redpanda:9092
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=admin
+      - MINIO_SECRET_KEY=password
+      - MINIO_BUCKET=okx
+      - TIMESCALE_HOST=${TIMESCALE_HOST}
+      - TIMESCALE_PORT=${TIMESCALE_PORT}
+      - TIMESCALE_DB=${TIMESCALE_DB}
+      - TIMESCALE_USER=${TIMESCALE_USER}
+      - TIMESCALE_PASSWORD=${TIMESCALE_PASSWORD}
+    restart: unless-stopped
+
+  # ========================================
+  # REAL-TIME DIRECT COPY: PERPETUAL FUNDING RATE
+  # ========================================
+  perpetual-fundingrate-aggregator:
+    build:
+
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file:
+      - ../.env
+    image: okx-ingestion:latest
+    container_name: perpetual-fundingrate-aggregator
+    command: >
+      bash -c "
+        echo 'Starting Perpetual Funding Rate Real-time Aggregator...' &&
+        python -u -m src.processing.silver.direct.realtime.perpetual_fundingRate
+      "
+    volumes:
+      - ../src:/app/src
+    working_dir: /app
+    environment:
+      - PYTHONPATH=/app/src
+      - REDPANDA_BOOTSTRAP_SERVERS=redpanda:9092
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=admin
+      - MINIO_SECRET_KEY=password
+      - MINIO_BUCKET=okx
+      - TIMESCALE_HOST=${TIMESCALE_HOST}
+      - TIMESCALE_PORT=${TIMESCALE_PORT}
+      - TIMESCALE_DB=${TIMESCALE_DB}
+      - TIMESCALE_USER=${TIMESCALE_USER}
+      - TIMESCALE_PASSWORD=${TIMESCALE_PASSWORD}
+    restart: unless-stopped
+
+networks:
+  default:
+    name: project_default
+    external: true
+
