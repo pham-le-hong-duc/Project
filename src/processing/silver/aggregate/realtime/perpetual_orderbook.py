@@ -26,11 +26,11 @@ class PerpetualOrderBookConsumer(RealtimeAggregator):
     def __init__(self, **kwargs):
         """Initialize perpetual orderbook consumer."""
         super().__init__(
-            topic='okx-orderbook',
+            topic='okx-perpetual_orderBook',
             data_type='perpetual_orderBook',
             symbol='btc-usdt-swap',
             timestamp_field='ts',
-            dedupe_columns=None,  # No dedupe - snapshots are unique
+            dedupe_columns=['ts'],  # Dedupe by timestamp to avoid duplicates from S3 + Redpanda
             warmup_messages=10,  # Load 10 recent snapshots on first startup
             **kwargs
         )
@@ -52,11 +52,14 @@ class PerpetualOrderBookConsumer(RealtimeAggregator):
             pl.DataFrame with aggregated features (70+ columns)
         """
         try:
-            # Convert to LazyFrame for aggregator
+            # Convert to LazyFrame
             lf = df_window.lazy()
             
+            # Prepare features (parse JSON, calculate wmp, spread, imbalance, etc.)
+            lf_prepared = self.aggregator.prepare_features_sanitized(lf)
+            
             # Sort by timestamp and collect to DataFrame
-            df_sorted = lf.sort('ts').collect()
+            df_sorted = lf_prepared.sort('ts').collect()
             
             # Aggregate window using historical aggregator
             result_dict = self.aggregator.aggregate_window_data(df_sorted, window_ts)

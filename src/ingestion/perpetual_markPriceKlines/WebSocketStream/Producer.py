@@ -1,7 +1,7 @@
 """
 Perpetual Mark Price Klines WebSocket Producer using BaseWebSocketStreamProducer.
 
-Architecture: WebSocket → Buffer → Redpanda Topic (okx-perpetual-mark-klines)
+Architecture: WebSocket → Buffer → Redpanda Topic (okx-perpetual_markPriceKlines)
 Only 1m interval.
 """
 import json
@@ -18,7 +18,7 @@ class MarkPriceKlinesWebSocketStreamProducer(WebSocketStreamProducer):
     def __init__(self, 
                  symbol="BTC-USDT-SWAP",
                  redpanda_bootstrap_servers='redpanda:9092',
-                 redpanda_topic='okx-perpetual-mark-klines',
+                 redpanda_topic='okx-perpetual_markPriceKlines',
                  buffer_size=1, 
                  buffer_timeout=60):
         super().__init__(
@@ -77,7 +77,7 @@ async def main():
     stream = MarkPriceKlinesWebSocketStreamProducer(
         symbol="BTC-USDT-SWAP",
         redpanda_bootstrap_servers='redpanda:9092',
-        redpanda_topic='okx-perpetual-mark-klines',
+        redpanda_topic='okx-perpetual_markPriceKlines',
         buffer_size=1,
         buffer_timeout=60
     )

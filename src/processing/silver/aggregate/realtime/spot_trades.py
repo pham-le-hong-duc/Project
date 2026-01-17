@@ -26,7 +26,7 @@ class SpotTradesConsumer(RealtimeAggregator):
     def __init__(self, **kwargs):
         """Initialize spot trades consumer."""
         super().__init__(
-            topic='okx-spot-trades',
+            topic='okx-spot_trades',
             data_type='spot_trades',
             symbol='btc-usdt',
             timestamp_field='created_time',

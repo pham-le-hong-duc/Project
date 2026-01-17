@@ -26,7 +26,7 @@ class PerpetualTradesConsumer(RealtimeAggregator):
     def __init__(self, **kwargs):
         """Initialize perpetual trades consumer."""
         super().__init__(
-            topic='okx-perpetual-trades',
+            topic='okx-perpetual_trades',
             data_type='perpetual_trades',
             symbol='btc-usdt-swap',
             timestamp_field='created_time',

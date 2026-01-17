@@ -1,7 +1,7 @@
 """
 Spot Trades WebSocket Producer using BaseWebSocketStreamProducer.
 
-Architecture: WebSocket → Buffer → Redpanda Topic (okx-spot-trades)
+Architecture: WebSocket → Buffer → Redpanda Topic (okx-spot_trades)
 """
 import json
 import asyncio
@@ -17,7 +17,7 @@ class SpotTradesWebSocketStreamProducer(WebSocketStreamProducer):
     def __init__(self, 
                  symbol="BTC-USDT",
                  redpanda_bootstrap_servers='redpanda:9092',
-                 redpanda_topic='okx-spot-trades',
+                 redpanda_topic='okx-spot_trades',
                  buffer_size=128, 
                  buffer_timeout=10):
         super().__init__(
@@ -63,7 +63,7 @@ async def main():
     stream = SpotTradesWebSocketStreamProducer(
         symbol="BTC-USDT",
         redpanda_bootstrap_servers=os.getenv('REDPANDA_BOOTSTRAP_SERVERS', 'redpanda:9092'),
-        redpanda_topic='okx-spot-trades',
+        redpanda_topic='okx-spot_trades',
         buffer_size=128,
         buffer_timeout=10
     )

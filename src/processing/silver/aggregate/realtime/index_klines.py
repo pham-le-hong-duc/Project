@@ -26,7 +26,7 @@ class IndexKlinesConsumer(RealtimeAggregator):
     def __init__(self, **kwargs):
         """Initialize index klines consumer."""
         super().__init__(
-            topic='okx-index-klines',
+            topic='okx-indexPriceKlines',
             data_type='indexPriceKlines',
             symbol='btc-usdt',
             timestamp_field='open_time',  # Klines use open_time

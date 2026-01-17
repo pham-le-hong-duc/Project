@@ -26,7 +26,7 @@ class PerpetualMarkKlinesConsumer(RealtimeAggregator):
     def __init__(self, **kwargs):
         """Initialize perpetual mark klines consumer."""
         super().__init__(
-            topic='okx-perpetual-mark-klines',
+            topic='okx-perpetual_markPriceKlines',
             data_type='perpetual_markPriceKlines',
             symbol='btc-usdt-swap',
             timestamp_field='open_time',  # Klines use open_time

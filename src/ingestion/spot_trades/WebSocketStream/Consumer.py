@@ -13,7 +13,7 @@ from src.ingestion.common.redpanda.Consumer import Consumer
 if __name__ == "__main__":
     import os
     consumer = Consumer(
-        topic='okx-spot-trades',
+        topic='okx-spot_trades',
         data_type='spot_trades',
         symbol='btc-usdt',
         unique_field='trade_id',

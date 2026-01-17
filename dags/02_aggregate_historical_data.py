@@ -91,7 +91,7 @@ with DAG(
     dag_id='02_aggregate_historical_data',
     default_args=default_args,
     description='Backfill historical data from Bronze to Silver (S3 → DuckDB)',
-    schedule_interval=None,  # Manual trigger only
+    schedule_interval='30 */8 * * *',  # Run every 8 hours, 30 min after DAG01 (00:30, 08:30, 16:30 UTC)
     start_date=datetime(2024, 1, 1),
     catchup=False,  # Don't backfill past runs
     max_active_runs=1,

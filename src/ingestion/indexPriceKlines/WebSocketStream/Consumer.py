@@ -12,7 +12,7 @@ from src.ingestion.common.redpanda.Consumer import Consumer
 import os
 if __name__ == "__main__":
     consumer = Consumer(
-        topic='okx-index-klines',
+        topic='okx-indexPriceKlines',
         data_type='indexPriceKlines',
         symbol='btc-usdt',
         unique_field='open_time',

@@ -12,7 +12,7 @@ from src.ingestion.common.redpanda.Consumer import Consumer
 import os
 if __name__ == "__main__":
     consumer = Consumer(
-        topic='okx-perpetual-trades',
+        topic='okx-perpetual_trades',
         data_type='perpetual_trades',
         symbol='btc-usdt-swap',
         unique_field='trade_id',

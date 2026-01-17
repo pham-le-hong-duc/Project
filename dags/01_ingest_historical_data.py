@@ -203,9 +203,10 @@ with DAG(
     dag_id='01_ingest_historical_data',
     default_args=default_args,
     description='Download and fill historical data from OKX',
-    schedule_interval=None,  
+    schedule_interval='0 */8 * * *',  # Run every 8 hours (00:00, 08:00, 16:00 UTC)
     start_date=datetime(2024, 1, 1),
     catchup=False,  
+    max_active_runs=1,  # Only one run at a time
 ) as dag:
     
     # Task Group: Spot Trades (Ingestion + Bronze Processing)

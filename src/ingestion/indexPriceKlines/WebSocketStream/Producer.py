@@ -1,7 +1,7 @@
 """
 Index Price Klines WebSocket Producer using BaseWebSocketStreamProducer.
 
-Architecture: WebSocket → Buffer → Redpanda Topic (okx-index-klines)
+Architecture: WebSocket → Buffer → Redpanda Topic (okx-indexPriceKlines)
 Supports multiple intervals (currently 1m).
 """
 import json
@@ -19,7 +19,7 @@ class IndexPriceKlinesWebSocketStreamProducer(WebSocketStreamProducer):
     def __init__(self, 
                  symbol="BTC-USDT",
                  redpanda_bootstrap_servers='redpanda:9092',
-                 redpanda_topic='okx-index-klines',
+                 redpanda_topic='okx-indexPriceKlines',
                  buffer_size=1, 
                  buffer_timeout=60):
         super().__init__(
@@ -79,7 +79,7 @@ async def main():
     stream = IndexPriceKlinesWebSocketStreamProducer(
         symbol="BTC-USDT",
         redpanda_bootstrap_servers='redpanda:9092',
-        redpanda_topic='okx-index-klines',
+        redpanda_topic='okx-indexPriceKlines',
         buffer_size=1,
         buffer_timeout=60
     )

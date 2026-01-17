@@ -1,7 +1,7 @@
 """
 Perpetual Funding Rate WebSocket Producer using BaseWebSocketStreamProducer.
 
-Architecture: WebSocket → Buffer → Redpanda Topic (okx-perpetual-funding-rate)
+Architecture: WebSocket → Buffer → Redpanda Topic (okx-perpetual_fundingRate)
 Updates every 8 hours.
 """
 import json
@@ -18,7 +18,7 @@ class FundingRateWebSocketStreamProducer(WebSocketStreamProducer):
     def __init__(self, 
                  symbol="BTC-USDT-SWAP",
                  redpanda_bootstrap_servers='redpanda:9092',
-                 redpanda_topic='okx-perpetual-funding-rate',
+                 redpanda_topic='okx-perpetual_fundingRate',
                  buffer_size=1,
                  buffer_timeout=300):
         super().__init__(
@@ -72,7 +72,7 @@ async def main():
     stream = FundingRateWebSocketStreamProducer(
         symbol="BTC-USDT-SWAP",
         redpanda_bootstrap_servers='redpanda:9092',
-        redpanda_topic='okx-perpetual-funding-rate',
+        redpanda_topic='okx-perpetual_fundingRate',
         buffer_size=1,
         buffer_timeout=300
     )

@@ -37,7 +37,7 @@ def create_topics(bootstrap_servers='localhost:9092'):
     topics = [
         # Spot Trades - High volume
         NewTopic(
-            name='okx-spot-trades',
+            name='okx-spot_trades',
             num_partitions=3,
             replication_factor=1,
             topic_configs={
@@ -48,29 +48,29 @@ def create_topics(bootstrap_servers='localhost:9092'):
         
         # Perpetual Trades - High volume
         NewTopic(
-            name='okx-perpetual-trades',
+            name='okx-perpetual_trades',
             num_partitions=3,
             replication_factor=1,
             topic_configs={
                 'retention.ms': str(7 * 24 * 60 * 60 * 1000),
-                'compression.type': 'snappy'
+                'compression.type': 'producer'
             }
         ),
         
         # Perpetual Order Book - Very high volume
         NewTopic(
-            name='okx-perpetual-orderbook',
-            num_partitions=5,
+            name='okx-perpetual_orderBook',
+            num_partitions=1,
             replication_factor=1,
             topic_configs={
-                'retention.ms': str(3 * 24 * 60 * 60 * 1000),  # 3 days (high volume)
+                'retention.ms': str(7 * 24 * 60 * 60 * 1000),  # 7 days
                 'compression.type': 'producer'
             }
         ),
         
         # Perpetual Funding Rate - Low volume (every 8 hours)
         NewTopic(
-            name='okx-perpetual-funding-rate',
+            name='okx-perpetual_fundingRate',
             num_partitions=1,
             replication_factor=1,
             topic_configs={
@@ -81,7 +81,7 @@ def create_topics(bootstrap_servers='localhost:9092'):
         
         # Index Price Klines - Medium volume
         NewTopic(
-            name='okx-index-klines',
+            name='okx-indexPriceKlines',
             num_partitions=1,
             replication_factor=1,
             topic_configs={
@@ -92,7 +92,7 @@ def create_topics(bootstrap_servers='localhost:9092'):
         
         # Perpetual Mark Price Klines - Medium volume
         NewTopic(
-            name='okx-perpetual-mark-klines',
+            name='okx-perpetual_markPriceKlines',
             num_partitions=1,
             replication_factor=1,
             topic_configs={

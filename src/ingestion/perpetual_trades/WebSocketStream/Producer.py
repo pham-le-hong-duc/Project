@@ -1,7 +1,7 @@
 """
 Perpetual Trades WebSocket Producer using BaseWebSocketStreamProducer.
 
-Architecture: WebSocket → Buffer → Redpanda Topic (okx-perpetual-trades)
+Architecture: WebSocket → Buffer → Redpanda Topic (okx-perpetual_trades)
 """
 import json
 import asyncio
@@ -17,7 +17,7 @@ class PerpetualTradesWebSocketStreamProducer(WebSocketStreamProducer):
     def __init__(self, 
                  symbol="BTC-USDT-SWAP",
                  redpanda_bootstrap_servers='redpanda:9092',
-                 redpanda_topic='okx-perpetual-trades',
+                 redpanda_topic='okx-perpetual_trades',
                  buffer_size=128, 
                  buffer_timeout=10):
         super().__init__(
@@ -63,7 +63,7 @@ async def main():
     stream = PerpetualTradesWebSocketStreamProducer(
         symbol="BTC-USDT-SWAP",
         redpanda_bootstrap_servers='redpanda:9092',
-        redpanda_topic='okx-perpetual-trades',
+        redpanda_topic='okx-perpetual_trades',
         buffer_size=128,
         buffer_timeout=10
     )

@@ -19,7 +19,7 @@ class FundingRateConsumer:
     """
     
     def __init__(self):
-        self.topic = 'okx-perpetual-fundingrate'
+        self.topic = 'okx-perpetual_fundingRate'
         self.group_id = 'silver-perpetual_fundingrate-btc-usdt-swap'
         self.table_name = 'perpetual_fundingrate'
         self.batch_size = 100

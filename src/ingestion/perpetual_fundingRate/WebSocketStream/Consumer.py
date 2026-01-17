@@ -13,7 +13,7 @@ from src.ingestion.common.redpanda.Consumer import Consumer
 import os
 if __name__ == "__main__":
     consumer = Consumer(
-        topic='okx-perpetual-funding-rate',
+        topic='okx-perpetual_fundingRate',
         data_type='perpetual_fundingRate',
         symbol='btc-usdt-swap',
         unique_field='funding_time',

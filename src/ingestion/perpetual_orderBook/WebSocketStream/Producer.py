@@ -1,7 +1,7 @@
 """
 Perpetual OrderBook WebSocket Producer using BaseWebSocketStreamProducer.
 
-Architecture: WebSocket → Aggregation State → Buffer → Redpanda Topic (okx-perpetual-orderbook)
+Architecture: WebSocket → Aggregation State → Buffer → Redpanda Topic (okx-perpetual_orderBook)
 Aggregates updates into 1-minute snapshots with rolling state.
 """
 import json
@@ -19,7 +19,7 @@ class OrderBookWebSocketStreamProducer(WebSocketStreamProducer):
     def __init__(self, 
                  symbol="BTC-USDT-SWAP",
                  redpanda_bootstrap_servers='redpanda:9092',
-                 redpanda_topic='okx-perpetual-orderbook',
+                 redpanda_topic='okx-perpetual_orderBook',
                  buffer_size=5,
                  buffer_timeout=10):
         super().__init__(
@@ -164,7 +164,7 @@ async def main():
     stream = OrderBookWebSocketStreamProducer(
         symbol="BTC-USDT-SWAP",
         redpanda_bootstrap_servers='redpanda:9092',
-        redpanda_topic='okx-perpetual-orderbook',
+        redpanda_topic='okx-perpetual_orderBook',
         buffer_size=5,
         buffer_timeout=10
     )

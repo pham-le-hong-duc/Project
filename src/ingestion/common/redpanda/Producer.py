@@ -158,7 +158,7 @@ if __name__ == "__main__":
     # Test single producer
     print("Testing Producer...")
     
-    with Producer(topic='okx-spot-trades') as producer:
+    with Producer(topic='okx-spot_trades') as producer:
         # Send single message
         test_msg = {
             'instrument_name': 'BTC-USDT',
