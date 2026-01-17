@@ -61,9 +61,9 @@ help:
 # Infrastructure targets
 .PHONY: infra-up infra-down infra-logs infra-status
 infra-up:
-	@echo "========================================="
+	@echo "========================================================="
 	@echo "STEP 1: Starting infrastructure services..."
-	@echo "========================================="
+	@echo "========================================================="
 	docker-compose -f docker/docker-compose.infrastructure.yml --env-file .env up -d --wait
 	@echo "[OK] All infrastructure services started!"
 
@@ -86,9 +86,9 @@ infra-status:
 # Real-time ingestion targets
 .PHONY: ingest-up ingest-down ingest-logs
 ingest-up:
-	@echo "========================================="
+	@echo "========================================================="
 	@echo "STEP 2: Starting real-time data ingestion..."
-	@echo "========================================="
+	@echo "========================================================="
 	docker-compose -f docker/docker-compose.ingest_realtime_data.yml --env-file .env up -d
 	@echo "[OK] All real-time data ingestion services started!"
 
@@ -102,9 +102,9 @@ ingest-logs:
 # Real-time aggregation targets
 .PHONY: aggregate-up aggregate-down aggregate-logs
 aggregate-up:
-	@echo "========================================="
+	@echo "========================================================="
 	@echo "STEP 4: Starting real-time data aggregation..."
-	@echo "========================================="
+	@echo "========================================================="
 	docker-compose -f docker/docker-compose.aggregate_realtime_data.yml --env-file .env up -d
 	@echo "[OK] All real-time data aggregation services started!"
 
@@ -117,17 +117,17 @@ aggregate-logs:
 
 # Airflow DAG targets
 dag01:
-	@echo "========================================="
+	@echo "========================================================="
 	@echo "STEP 3: Running DAG 01: Historical data ingestion..."
-	@echo "========================================="
-	@powershell -Command "& { \$$date = Get-Date -Format 'yyyy-MM-dd'; docker exec airflow-webserver airflow dags trigger -e \$$date 01_ingest_historical_data 2>&1 | Out-Null; do { Start-Sleep -Seconds 5; \$$status = (docker exec airflow-webserver airflow dags state 01_ingest_historical_data \$$date).Trim(); } while (\$$status -match 'running|queued|null|restarting'); if (\$$status -ne 'success') { Write-Host ('[ERROR] DAG Failed: ' + \$$status) -ForegroundColor Red; exit 1 } }"	
+	@echo "========================================================="
+	@powershell -Command "& { \$$timestamp = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss'); docker exec airflow-webserver airflow dags trigger -e \$$timestamp 01_ingest_historical_data 2>&1 | Out-Null; do { Start-Sleep -Seconds 5; \$$status = (docker exec airflow-webserver airflow dags state 01_ingest_historical_data \$$timestamp).Trim(); } while (\$$status -match 'running|queued|null|restarting'); if (\$$status -ne 'success') { Write-Host ('[ERROR] DAG Failed: ' + \$$status) -ForegroundColor Red; exit 1 } }"
 	@echo "[OK] DAG 01 Finished and Recorded!"
 
 dag02:
-	@echo "========================================="
+	@echo "========================================================="
 	@echo "STEP 5: Running DAG 02: Historical data aggregation..."
-	@echo "========================================="
-	@powershell -Command "& { \$$date = Get-Date -Format 'yyyy-MM-dd'; docker exec airflow-webserver airflow dags trigger -e \$$date 02_aggregate_historical_data 2>&1 | Out-Null; do { Start-Sleep -Seconds 5; \$$status = (docker exec airflow-webserver airflow dags state 02_aggregate_historical_data \$$date).Trim(); } while (\$$status -match 'running|queued|null|restarting'); if (\$$status -ne 'success') { Write-Host ('[ERROR] DAG Failed: ' + \$$status) -ForegroundColor Red; exit 1 } }"
+	@echo "========================================================="
+	@powershell -Command "& { \$$timestamp = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss'); docker exec airflow-webserver airflow dags trigger -e \$$timestamp 02_aggregate_historical_data 2>&1 | Out-Null; do { Start-Sleep -Seconds 5; \$$status = (docker exec airflow-webserver airflow dags state 02_aggregate_historical_data \$$timestamp).Trim(); } while (\$$status -match 'running|queued|null|restarting'); if (\$$status -ne 'success') { Write-Host ('[ERROR] DAG Failed: ' + \$$status) -ForegroundColor Red; exit 1 } }"
 	@echo "[OK] DAG 02 Finished and Recorded!"
 
 dag-list:
@@ -191,9 +191,9 @@ check-docker:
 	@powershell -Command "& { docker info 2>&1 | Out-Null; if (\$$LASTEXITCODE -ne 0) { Write-Host '[ERROR] Docker is not running!'; Write-Host ''; Write-Host 'Please start Docker Desktop and try again.'; exit 1 } else { Write-Host '[OK] Docker is running' } }"
 
 build:
-	@echo "========================================="
+	@echo "========================================================="
 	@echo "STEP 0: Building Docker images..."
-	@echo "========================================="
+	@echo "========================================================="
 	@echo "Building custom application image (okx-ingestion)..."
 	@echo "Note: Docker will cache layers for faster rebuilds"
 	docker-compose -f docker/docker-compose.infrastructure.yml --env-file .env build
